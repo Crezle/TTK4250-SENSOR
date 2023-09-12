@@ -1,0 +1,11 @@
+numpy
+scipy
+matplotlib
+pyqt5
+pytest
+ipython
+jupyter
+flake8
+pylint
+autopep8
+tqdm
