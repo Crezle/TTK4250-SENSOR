@@ -35,8 +35,10 @@ def get_double_conds(state: MultiVarGauss2d,
 
 def get_prob_over_line(gauss: MultiVarGauss2d) -> float:
 
-    problem_transform = [-1, 1]
+    c = np.array([[-1], [1]])
     
-    # TODO replace this with own code
-    prob = task2_solu.get_prob_over_line(gauss)
+    new_gauss = gauss.get_transformed(c.T)
+    
+    prob = 1 - norm.cdf(5, new_gauss.mean, np.sqrt(new_gauss.cov)) # Left side CDF
+    
     return prob
