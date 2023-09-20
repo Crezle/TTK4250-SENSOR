@@ -12,9 +12,13 @@ def get_nis(meas_pred: MultiVarGauss, meas: Measurement2d) -> float:
     See (4.66 in the book). 
     Tip: use the mahalanobis_distance method of meas_pred, (3.2) in the book
     """
-
-    # TODO replace this with own code
-    nis = analysis_solu.get_nis(meas_pred, meas)
+    
+    z = meas.value
+    z_hat = meas_pred.mean
+    S = meas_pred.cov
+    
+    innovation = z - z_hat
+    nis = innovation.T @ np.linalg.inv(S) @ innovation
 
     return nis
 
@@ -24,9 +28,11 @@ def get_nees(state_est: MultiVarGauss, x_gt: np.ndarray):
     See (4.65 in the book). 
     Tip: use the mahalanobis_distance method of x_gauss, (3.2) in the book
     """
-
-    # TODO replace this with own code
-    NEES = analysis_solu.get_nees(state_est, x_gt)
+    x_hat = state_est.mean
+    P = state_est.cov
+    
+    NEES = (x_hat - x_gt).T @ np.linalg.inv(P) @ (x_hat - x_gt) # Why is it named "x_gt"? (Ground truth?)
+    
     return NEES
 
 

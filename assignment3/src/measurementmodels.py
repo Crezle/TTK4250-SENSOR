@@ -11,23 +11,24 @@ class CartesianPosition2D:
 
     def h(self, x: ndarray) -> ndarray:
         """Calculate the noise free measurement value of x."""
-
-        # TODO replace this with own code
-        x_h = measurementmodels_solu.CartesianPosition2D.h(self, x)
+        
+        x_h = self.H(x) @ x
+        
         return x_h
 
     def H(self, x: ndarray) -> ndarray:
         """Get the measurement matrix at x."""
 
-        # TODO replace this with own code
-        H = measurementmodels_solu.CartesianPosition2D.H(self, x)
+        H = np.block([np.identity(2), np.zeros((2,2))])    
+
         return H
 
     def R(self, x: ndarray) -> ndarray:
         """Get the measurement covariance matrix at x."""
 
         # TODO replace this with own code
-        R = measurementmodels_solu.CartesianPosition2D.R(self, x)
+        R = np.identity(2) * self.sigma_z**2
+
         return R
 
     def predict_measurement(self,
@@ -36,14 +37,11 @@ class CartesianPosition2D:
         """Get the predicted measurement distribution given a state estimate.
         See 4. and 6. of Algorithm 1 in the book.
         """
-        z_hat = None  # TODO
-        H = None  # TODO
-        S = None  # TODO
+        x_hat, P = state_est
+        z_hat = self.H(x_hat) @ x_hat # TODO
+        H = self.H(x_hat)  # TODO
+        S = H @ P @ H.T + self.R(x_hat)  # TODO
 
         measure_pred_gauss = MultiVarGauss(z_hat, S)
-
-        # TODO replace this with own code
-        measure_pred_gauss = measurementmodels_solu.CartesianPosition2D.predict_measurement(
-            self, state_est)
 
         return measure_pred_gauss
