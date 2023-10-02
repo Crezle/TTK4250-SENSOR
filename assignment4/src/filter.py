@@ -65,7 +65,7 @@ class FilterIMM:
         # print(f'PI_MAT SHAPE: {pi_mat.shape}')
         # print(f'PREV_WEIGHT SHAPE: {prev_weights.shape}')
         
-        mixing_probs = pi_mat @ np.array([prev_weights, prev_weights, prev_weights]).T # TODO NOTE: UNABLE TO CREATE CORRECT MATRIX
+        mixing_probs = pi_mat.T @ np.array([prev_weights, prev_weights, prev_weights]).T # TODO NOTE: UNABLE TO CREATE CORRECT MATRIX
 
         return mixing_probs
 

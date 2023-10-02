@@ -5,6 +5,7 @@ from typing import Sequence, TypeVar, Generic
 from senfuslib import MultiVarGauss
 from config import DEBUG
 from solution import gaussian_mixture as gaussian_mixture_solu
+from states import StateCV
 
 S = TypeVar('S', bound=np.ndarray)  # State type
 
@@ -22,34 +23,30 @@ class GaussianMixture(Generic[S]):
         """Find the mean of the gaussian mixture.
         Hint: Use (6.24) from the book."""
 
-        for index, gaussian in enumerate(self.gaussians):
-            if index == 0:
-                mean = self.weights[index] * gaussian.mean # This is to secure that "mean" posesses same type as the content in "self.gaussians"
-            else:
-                mean += self.weights[index] * gaussian.mean
-            
+        mean = 0
+        
+        for i in range(len(self.weights)):
+            mean = mean + self.weights[i] * self.gaussians[i].mean
+
         return mean
 
     def cov(self):
         """Find the covariance of the gaussian mixture.
         Hint: Use (6.25) from the book."""
-
-        for index, gaussian in enumerate(self.gaussians):
-            if index == 0:
-                spread_of_inno = self.weights[index] * gaussian.mean * gaussian.mean.T
-            else:
-                spread_of_inno += self.weights[index] * gaussian.mean * gaussian.mean.T
-            
-        spread_of_inno -= self.mean() * self.mean().T
-
-        for index, gaussian in enumerate(self.gaussians):
-            if index == 0:
-                cov = self.weights[index] * gaussian.cov # This is to secure that "mean" posesses same type as the content in "self.gaussians"
-            else:
-                cov += self.weights[index] * gaussian.cov
-
-        cov += spread_of_inno
         
+        cov = 0
+        spread_inno = 0
+
+        for i in range(len(self.weights)):
+            cov = cov + self.weights[i] * self.gaussians[i].cov
+
+        for i in range(len(self.weights)):
+            spread_inno = spread_inno + self.weights[i] * self.gaussians[i].mean @ self.gaussians[i].mean.T
+        
+        spread_inno = spread_inno - self.mean() @ self.mean().T
+        
+        cov = cov + spread_inno
+            
         return cov
 
     def reduce(self) -> MultiVarGauss[S]:

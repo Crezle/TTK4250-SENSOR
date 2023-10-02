@@ -14,15 +14,6 @@ class StateCV(NamedArray):
     vel: AtIndex[2:4] = field(init=False)
 
     prev_mode: MetaData[int] = field(default=None)
-    
-    def add(self, other): # Added to make addition possible
-        return StateCV(
-            self.x + other.x,
-            self.y + other.y,
-            self.u + other.u,
-            self.v + other.v
-        )
-
 
 @dataclass
 class MeasPos(NamedArray):
