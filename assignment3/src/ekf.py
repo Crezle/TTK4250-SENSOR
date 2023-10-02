@@ -40,17 +40,19 @@ class ExtendedKalmanFilter:
         state_pred = self.dyn_modl.predict_state(state_old, meas.dt)
         meas_pred = self.sens_modl.predict_measurement(state_pred)
 
-        H = None  # TODO
-        kalman_gain = None  # TODO
-        innovation = None  # TODO
+        z = meas.value
+        z_hat = meas_pred.mean
+        x_hat = state_pred.mean
 
-        state_upd_mean = None  # TODO
-        state_upd_cov = None  # TODO
+        H = self.sens_modl.H(state_pred)  # TODO
+        P_pred = state_pred.cov
+        S = meas_pred.cov
+        kalman_gain = P_pred @ H.T @ np.linalg.inv(S)  # TODO
+        innovation = z - z_hat  # TODO
+
+        state_upd_mean = x_hat + kalman_gain @ innovation  # TODO
+        state_upd_cov = (np.identity(len(x_hat)) - kalman_gain @ H) @ P_pred  # TODO
 
         state_upd = MultiVarGauss(state_upd_mean, state_upd_cov)
-
-        # TODO replace this with own code
-        state_upd, state_pred, meas_pred = ekf_solu.ExtendedKalmanFilter.step(
-            self, state_old, meas)
 
         return state_upd, state_pred, meas_pred
