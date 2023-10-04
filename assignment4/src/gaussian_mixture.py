@@ -23,9 +23,11 @@ class GaussianMixture(Generic[S]):
         """Find the mean of the gaussian mixture.
         Hint: Use (6.24) from the book."""
 
+        n = len(self.gaussians[0].mean)
         mean = 0
         
         for i in range(len(self.weights)):
+            
             mean = mean + self.weights[i] * self.gaussians[i].mean
 
         return mean
@@ -39,12 +41,9 @@ class GaussianMixture(Generic[S]):
 
         for i in range(len(self.weights)):
             cov = cov + self.weights[i] * self.gaussians[i].cov
+            mean_deviation = self.gaussians[i].mean.reshape(-1, 1) - self.mean().reshape(-1, 1)
+            spread_inno = spread_inno + self.weights[i] * mean_deviation * mean_deviation.T
 
-        for i in range(len(self.weights)):
-            spread_inno = spread_inno + self.weights[i] * self.gaussians[i].mean @ self.gaussians[i].mean.T
-        
-        spread_inno = spread_inno - self.mean() @ self.mean().T
-        
         cov = cov + spread_inno
             
         return cov

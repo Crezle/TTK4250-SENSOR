@@ -65,8 +65,14 @@ class FilterIMM:
         # print(f'PI_MAT SHAPE: {pi_mat.shape}')
         # print(f'PREV_WEIGHT SHAPE: {prev_weights.shape}')
         
-        mixing_probs = pi_mat.T @ np.array([prev_weights, prev_weights, prev_weights]).T # TODO NOTE: UNABLE TO CREATE CORRECT MATRIX
+        mixing_probs = pi_mat * prev_weights.reshape(-1, 1)
 
+        for col in range(len(mixing_probs)):
+            mixing_probs[:, col] = mixing_probs[:, col] / np.sum(mixing_probs[:, col])
+
+        
+        
+        
         return mixing_probs
 
     def mixing(self,
@@ -104,7 +110,9 @@ class FilterIMM:
         ekf_outs = []
 
         for i, x_prev in enumerate(moment_based_preds):
-            out_ekf = EKF.step(x_prev, z, dt)  # TODO (OutputEKF)
+            
+            ekf = EKF(dynamic_model=self.dynamic_model.models[i], sensor_model=self.sensor_model)
+            out_ekf = ekf.step(x_prev, z, dt)  # TODO (OutputEKF)
             ekf_outs.append(out_ekf)
 
         return ekf_outs
@@ -122,14 +130,13 @@ class FilterIMM:
         """
         pi_mat = self.dynamic_model.get_pi_mat_d(dt)
 
-        weights_pred = None  # TODO, use (6.6)
-        z_probs = None  # TODO
+        weights_pred = pi_mat.T @ weights.reshape(-1, 1)  # TODO, use (6.6)
 
-        weights_upd = None  # TODO
+        z_probs = np.array([ekf_outs[i].z_est_pred.pdf(z) for i in range(len(ekf_outs))])  # TODO
 
-        # TODO remove this
-        weights_upd = filter_solu.FilterIMM.update_probabilities(
-            self, ekf_outs, z, dt, weights)
+        
+        weights_upd = z_probs * weights_pred.flatten() / np.sum(z_probs * weights_pred.flatten())  # TODO
+        
         return weights_upd
 
     def step(self,
@@ -137,21 +144,18 @@ class FilterIMM:
              z: MeasPos,
              dt) -> GaussianMixture[StateCV]:
         """Perform one step of the IMM filter."""
-        mixing_probs = None  # TODO
-        momend_based_preds = None  # TODO
-        ekf_outs = None  # TODO
-        weights_upd = None  # TODO
-        x_est_upd = None  # TODO
-        if ekf_outs is not None:  # You can remove this
-            x_est_pred = GaussianMixture(x_est_prev.weights,
-                                         [out.x_est_pred for out in ekf_outs])
+        mixing_probs = self.calculate_mixings(x_est_prev, dt)  # TODO
+        moment_based_preds = self.mixing(x_est_prev, mixing_probs)  # TODO
+        ekf_outs = self.mode_match_filter(moment_based_preds, z, dt)  # TODO
+        weights_upd = self.update_probabilities(ekf_outs, z, dt, x_est_prev.weights)  # TODO
+        
+        x_est_upd = GaussianMixture(weights_upd,
+                                    [out.x_est_upd for out in ekf_outs])  # TODO
+        x_est_pred = GaussianMixture(x_est_prev.weights,
+                                        [out.x_est_pred for out in ekf_outs])
+        z_est_pred = GaussianMixture(x_est_prev.weights,
+                                        [out.z_est_pred for out in ekf_outs])
 
-            z_est_pred = GaussianMixture(x_est_prev.weights,
-                                         [out.z_est_pred for out in ekf_outs])
-
-        # TODO remove this
-        x_est_upd, x_est_pred, z_est_pred = filter_solu.FilterIMM.step(
-            self, x_est_prev, z, dt)
 
         return x_est_upd, x_est_pred, z_est_pred
 
