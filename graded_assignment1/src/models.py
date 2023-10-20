@@ -66,8 +66,12 @@ class ModelIMU:
         acc_est = np.zeros(3)
         avel_est = np.zeros(3)
 
-        # TODO remove this
-        z_corr = models_solu.ModelIMU.correct_z_imu(self, x_est_nom, z_imu)
+        # Noise is not accounted for in estimate, but rather in covariance
+        acc_est = self.accm_correction @ (z_imu.acc - x_est_nom.accm_bias)
+        avel_est = self.gyro_correction @ (z_imu.avel - x_est_nom.gyro_bias)
+
+        z_corr = CorrectedImuMeasurement(acc_est, avel_est)
+
         return z_corr
 
     def predict_nom(self,
