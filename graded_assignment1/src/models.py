@@ -93,19 +93,22 @@ class ModelIMU:
         Returns:
             x_nom_pred: predicted nominal state
         """
-        a = z_corr.acc + self.g
-        w = np.linalg.inv(self.gyro_correction) @ z_corr.avel
-        pos_pred = x_est_nom.pos + dt*x_est_nom.vel + (dt**2)/2 * a  # TODO
-        vel_pred = x_est_nom.vel + dt*a  # TODO
+        a = (x_est_nom.ori.as_rotmat() @ (z_corr.acc)) + self.g
+        w = z_corr.avel
+        v = x_est_nom.vel
+        p = x_est_nom.pos
+
+        pos_pred = p + dt*v + (dt**2)/2 * a  # TODO
+        vel_pred = v + dt*a  # TODO
 
         delta_rot = RotationQuaterion(1, np.zeros(3)).from_avec(dt*w)  # TODO
-        ori_pred = x_est_nom.ori.multiply(delta_rot)  # TODO
+        ori_pred = x_est_nom.ori @ delta_rot  # TODO
 
-        acc_bias_pred = x_est_nom.accm_bias - x_est_nom.accm_bias # TODO
-        gyro_bias_pred = x_est_nom.gyro_bias - x_est_nom.gyro_bias  # TODO
+        acc_bias_pred = x_est_nom.accm_bias - dt * self.accm_bias_p * x_est_nom.accm_bias # TODO
+        gyro_bias_pred = x_est_nom.gyro_bias - dt * self.gyro_bias_p * x_est_nom.gyro_bias  # TODO
 
         x_nom_pred = NominalState(pos_pred, vel_pred, ori_pred, acc_bias_pred, gyro_bias_pred)
-        print(x_nom_pred)
+
         return x_nom_pred
 
     def A_c(self,
@@ -133,8 +136,14 @@ class ModelIMU:
         S_acc = get_cross_matrix(z_corr.acc)
         S_omega = get_cross_matrix(z_corr.avel)
 
-        # TODO remove this
-        A_c = models_solu.ModelIMU.A_c(self, x_est_nom, z_corr)
+        A_c[block_3x3(0, 1)] = np.eye(3)
+        A_c[block_3x3(1, 2)] = -Rq @ S_acc
+        A_c[block_3x3(1, 3)] = -Rq
+        A_c[block_3x3(2, 2)] = -S_omega
+        A_c[block_3x3(2, 4)] = -self.gyro_correction
+        A_c[block_3x3(3, 3)] = -(self.accm_bias_p * self.accm_correction)
+        A_c[block_3x3(4, 4)] = -(self.gyro_bias_p * self.gyro_correction)
+        
         return A_c
 
     def get_error_G_c(self,
