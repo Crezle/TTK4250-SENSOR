@@ -137,12 +137,12 @@ class ModelIMU:
         S_omega = get_cross_matrix(z_corr.avel)
 
         A_c[block_3x3(0, 1)] = np.eye(3)
-        A_c[block_3x3(1, 2)] = -Rq @ S_acc
-        A_c[block_3x3(1, 3)] = -Rq
-        A_c[block_3x3(2, 2)] = -S_omega
-        A_c[block_3x3(2, 4)] = -self.gyro_correction
-        A_c[block_3x3(3, 3)] = -(self.accm_bias_p * self.accm_correction)
-        A_c[block_3x3(4, 4)] = -(self.gyro_bias_p * self.gyro_correction)
+        A_c[block_3x3(1, 2)] = - Rq @ S_acc
+        A_c[block_3x3(1, 3)] = - Rq @ self.accm_correction
+        A_c[block_3x3(2, 2)] = - S_omega
+        A_c[block_3x3(2, 4)] = - self.gyro_correction
+        A_c[block_3x3(3, 3)] = - (self.accm_bias_p * self.accm_correction)
+        A_c[block_3x3(4, 4)] = - (self.gyro_bias_p * self.gyro_correction)
         
         return A_c
 
@@ -162,8 +162,10 @@ class ModelIMU:
         G_c = np.zeros((15, 12))
         Rq = x_est_nom.ori.as_rotmat()
 
-        # TODO remove this
-        G_c = models_solu.ModelIMU.get_error_G_c(self, x_est_nom)
+        G_c[block_3x3(1, 0)] = - Rq
+        G_c[block_3x3(2, 1)] = - np.eye(3)
+        G_c[block_3x3(3, 2)] = np.eye(3)
+        G_c[block_3x3(4, 3)] = np.eye(3)
 
         return G_c
 
@@ -189,19 +191,20 @@ class ModelIMU:
             A_d (ndarray[15, 15]): discrede transition matrix
             GQGT_d (ndarray[15, 15]): discrete noise covariance matrix
         """
-        A_c = None  # TODO
-        G_c = None  # TODO
-        GQGT_c = None  # TODO
+        A_c = self.A_c(x_est_nom, z_corr)  # TODO
+        G_c = self.get_error_G_c(x_est_nom)  # TODO
+        GQGT_c = G_c @ self.Q_c @ G_c.T  # TODO
+        
+        zero_matr = A_c * 0
+        exponent = np.block([[-A_c, GQGT_c], [zero_matr, A_c.T]]) * dt  # TODO
+        VanLoanMatrix = scipy.linalg.expm(exponent)  # TODO
 
-        exponent = None  # TODO
-        VanLoanMatrix = None  # TODO
+        M = 15 #Dimension of blocks in block matrix
+        V1 = VanLoanMatrix[1*M:2*M, 1*M:2*M]
+        V2 = VanLoanMatrix[0*M:1*M, 1*M:2*M]
 
-        A_d = None  # TODO
-        GQGT_d = None  # TODO
-
-        # TODO remove this
-        A_d, GQGT_d = models_solu.ModelIMU.get_discrete_error_diff(
-            self, x_est_nom, z_corr, dt)
+        A_d = scipy.linalg.expm(A_c * dt)  # TODO
+        GQGT_d = V1.T @ V2  # TODO
 
         return A_d, GQGT_d
 
@@ -224,10 +227,11 @@ class ModelIMU:
         """
         x_est_prev_nom = x_est_prev.nom
         x_est_prev_err = x_est_prev.err
-        Ad, GQGTd = None, None  # TODO
-        P_pred = np.eye(15)  # TODO
+        Ad, GQGTd = self.get_discrete_error_diff(x_est_prev_nom, z_corr, dt)  # TODO
 
-        # TODO remove this
-        x_err_pred = models_solu.ModelIMU.predict_err(
-            self, x_est_prev, z_corr, dt)
+        x_err_pred_est = Ad @ x_est_prev_err.mean
+        P_pred = Ad @ x_est_prev_err.cov @ Ad.T + GQGTd # TODO
+
+        x_err_pred = MultiVarGauss(x_err_pred_est, P_pred)
+
         return x_err_pred
