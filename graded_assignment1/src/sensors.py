@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Optional
 import numpy as np
+import scipy as sp # Used for block diagonal matrix
 
 from senfuslib import MultiVarGauss
 from states import NominalState, GnssMeasurement, EskfState
@@ -30,7 +31,7 @@ class SensorGNSS:
         Returns:
             H (ndarray[3, 15]): the measurement matrix
         """
-        H = np.zeros((3, 15))
+        H = np.block([np.eye(3), np.zeros((3, 3)), -x_nom.ori.as_rotmat() @ get_cross_matrix(self.lever_arm), np.zeros((3, 6))])
 
         return H
 
@@ -46,7 +47,23 @@ class SensorGNSS:
         """
         x_est_nom = x_est.nom
         x_est_err = x_est.err
-        H = self.H(x_est_nom)
+        epsilon = x_est_nom.ori.epsilon
+        eta = x_est_nom.ori.eta
+        Q = (1/2) * np.array([[-epsilon[0], -epsilon[1], -epsilon[2]], 
+                              [eta, -epsilon[2], epsilon[1]],
+                              [epsilon[2], eta, -epsilon[0]],
+                              [-epsilon[1], epsilon[0], eta]])
+        
+        X_delta = sp.linalg.block_diag(np.eye(6), Q, np.eye(6))
+        
+        z_q = 2 * np.array([[eta, epsilon[0], -epsilon[1], -epsilon[2]],
+                            [epsilon[2], epsilon[1], epsilon[0], -eta],
+                            [epsilon[1], epsilon[2], eta, epsilon[0]]])
+        H_x = np.block([np.zeros((3, 6)), z_q, np.zeros((3, 6))])
+
+        # H = H_x @ X_delta, H_x is (3x16), X_delta is (16x15)
+        
+        H = H_x @ X_delta
 
         z_pred = H @ x_est_err.mean  # TODO
         S = H @ x_est_err.cov @ H.T + self.R  # TODO

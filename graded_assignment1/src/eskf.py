@@ -37,22 +37,15 @@ class ESKF():
             x_est_pred: predicted eskf state
         """
         if dt == 0:
-
-            # TODO remove this
-            x_est_prev = eskf_solu.ESKF.predict_from_imu(
-                self, x_est_prev, z_imu, dt)
             return x_est_prev
 
         x_est_prev_nom = x_est_prev.nom
-        z_corr = None  # TODO
-        x_est_pred_nom = None  # TODO
-        x_est_pred_err = None  # TODO
+        z_corr = self.model.correct_z_imu(x_est_prev_nom, z_imu)  # TODO
+        x_est_pred_nom = self.model.predict_nom(x_est_prev_nom, z_corr, dt)  # TODO
+        x_est_pred_err = self.model.predict_err(x_est_prev, z_corr, dt)  # TODO
 
         x_est_pred = EskfState(x_est_pred_nom, x_est_pred_err)
 
-        # TODO remove this
-        x_est_pred = eskf_solu.ESKF.predict_from_imu(
-            self, x_est_prev, z_imu, dt)
         return x_est_pred
 
     def update_err_from_gnss(self,
@@ -71,6 +64,8 @@ class ESKF():
             S = H @ P @ H.T + R
         and that:
             np.linalg.solve(S, H.T) is faster than np.linalg.inv(S)
+            # Equivalent to matlab A\b instead of inv(A): 
+            # OBSERVATION: np.linalg.solve(S, H).T = H.T @ np.linalg.inv(S)
 
         Args:
             x_est_pred: predicted nominal and error state (gaussian)
@@ -84,21 +79,18 @@ class ESKF():
         x_err = x_est_pred.err
         z_pred, S = z_est_pred
 
-        innovation = None  # TODO
-        H = None  # TODO
-        P = None  # TODO
-        R = None  # TODO
-        W = None  # TODO
-        x_err_upd = np.zeros(15)  # TODO
-        I_WH = None  # TODO
-        x_err_cov_upd = np.eye(15)  # TODO
+        innovation = z_gnss - z_pred  # TODO
+        H = self.sensor.H(x_nom)  # TODO
+        P = x_err.cov  # TODO
+        R = self.sensor.R  # TODO
+        W = P @ np.linalg.solve(S, H).T  # TODO |||| P @ H.T @ inv(S) = P @ (inv(S) @ H).T --> np.linalg.solve(S, H.T) = x = inv(S) @ H.T (NO PLACE TO PLACE SOLUTION)||||
+        x_err_upd = W @ innovation  # TODO
+        I_WH = np.eye(*P.shape) - W @ H  # TODO
+        x_err_cov_upd = I_WH @ P  # TODO
 
         x_err_upd = ErrorState.from_array(x_err_upd)
         x_est_upd_err = MultiVarGauss[ErrorState](x_err_upd, x_err_cov_upd)
 
-        # TODO remove this
-        x_est_upd_err = eskf_solu.ESKF.update_err_from_gnss(
-            self, x_est_pred, z_est_pred, z_gnss)
         return x_est_upd_err
 
     def inject(self,
@@ -117,11 +109,11 @@ class ESKF():
         Returns:
             x_est_inj: eskf state after injection
         """
-        pos_inj = np.zeros(3)
-        vel_inj = np.zeros(3)
-        ori_inj = RotationQuaterion(1, np.zeros(3))
-        accm_bias_inj = np.zeros(3)
-        gyro_bias_inj = np.zeros(3)
+        pos_inj = x_est_nom.pos + x_est_err.mean.pos
+        vel_inj = x_est_nom.vel + x_est_err.mean.vel
+        ori_inj = x_est_nom.ori @ RotationQuaterion(1, (1/2) * x_est_err.mean.avec)
+        accm_bias_inj = x_est_nom.accm_bias + x_est_err.mean.accm_bias
+        gyro_bias_inj = x_est_nom.gyro_bias + x_est_err.mean.gyro_bias
 
         x_nom_inj = NominalState(pos_inj, vel_inj, ori_inj,
                                  accm_bias_inj, gyro_bias_inj)
