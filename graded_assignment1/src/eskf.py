@@ -148,6 +148,6 @@ class ESKF():
         """
         z_est_pred = self.sensor.pred_from_est(x_est_pred)  # TODO
         x_est_upd_err = self.update_err_from_gnss(x_est_pred, z_est_pred, z_gnss)  # TODO
-        x_est_upd = self.inject(x_est_pred, x_est_upd_err)  # TODO
+        x_est_upd = self.inject(x_est_pred.nom, x_est_upd_err)  # TODO
 
         return x_est_upd, z_est_pred

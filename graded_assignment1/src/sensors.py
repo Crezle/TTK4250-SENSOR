@@ -47,6 +47,7 @@ class SensorGNSS:
         """
         x_est_nom = x_est.nom
         x_est_err = x_est.err
+
         epsilon = x_est_nom.ori.epsilon
         eta = x_est_nom.ori.eta
         Q = (1/2) * np.array([[-epsilon[0], -epsilon[1], -epsilon[2]], 
@@ -54,19 +55,17 @@ class SensorGNSS:
                               [epsilon[2], eta, -epsilon[0]],
                               [-epsilon[1], epsilon[0], eta]])
         
-        X_delta = sp.linalg.block_diag(np.eye(6), Q, np.eye(6))
-        
-        z_q = 2 * np.array([[eta, epsilon[0], -epsilon[1], -epsilon[2]],
-                            [epsilon[2], epsilon[1], epsilon[0], -eta],
-                            [epsilon[1], epsilon[2], eta, epsilon[0]]])
-        H_x = np.block([np.zeros((3, 6)), z_q, np.zeros((3, 6))])
+        X_delta = np.block([[np.eye(6), np.zeros((6,9))],
+                            [np.zeros((4,6)), Q, np.zeros((4,6))],
+                            [np.zeros((6,9)), np.eye(6)]])
 
-        # H = H_x @ X_delta, H_x is (3x16), X_delta is (16x15)
-        
+        H_x = np.block([np.eye(3), np.zeros((3, 13))])
+
         H = H_x @ X_delta
+        #H = self.H(x_est_nom)
 
         z_pred = H @ x_est_err.mean  # TODO
-        S = H @ x_est_err.cov @ H.T + self.R  # TODO
+        S = H @ x_est_err.cov @ H.T + self.R # TODO
 
         z_pred = GnssMeasurement.from_array(z_pred)
         z_gnss_pred_gauss = MultiVarGauss[GnssMeasurement](z_pred, S)
