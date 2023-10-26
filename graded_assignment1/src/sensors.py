@@ -1,7 +1,6 @@
 from dataclasses import dataclass, field
 from typing import Optional
 import numpy as np
-import scipy as sp # Used for block diagonal matrix
 
 from senfuslib import MultiVarGauss
 from states import NominalState, GnssMeasurement, EskfState
@@ -47,27 +46,13 @@ class SensorGNSS:
         """
         x_est_nom = x_est.nom
         x_est_err = x_est.err
-
-        epsilon = x_est_nom.ori.epsilon
-        eta = x_est_nom.ori.eta
-        Q = (1/2) * np.array([[-epsilon[0], -epsilon[1], -epsilon[2]], 
-                              [eta, -epsilon[2], epsilon[1]],
-                              [epsilon[2], eta, -epsilon[0]],
-                              [-epsilon[1], epsilon[0], eta]])
         
-        X_delta = np.block([[np.eye(6), np.zeros((6,9))],
-                            [np.zeros((4,6)), Q, np.zeros((4,6))],
-                            [np.zeros((6,9)), np.eye(6)]])
+        H = np.block([np.eye(3), np.zeros((3,13))])
 
-        H_x = np.block([np.eye(3), np.zeros((3, 13))])
-
-        H = H_x @ X_delta
-        #H = self.H(x_est_nom)
-
-        z_pred = H @ x_est_err.mean  # TODO
-        S = H @ x_est_err.cov @ H.T + self.R # TODO
+        z_pred = H @ x_est_nom + x_est_nom.ori.as_rotmat() @ self.lever_arm # TODO
+        S = self.H(x_est_nom) @ x_est_err.cov @ self.H(x_est_nom).T + self.R # TODO
 
         z_pred = GnssMeasurement.from_array(z_pred)
         z_gnss_pred_gauss = MultiVarGauss[GnssMeasurement](z_pred, S)
-
+        
         return z_gnss_pred_gauss
