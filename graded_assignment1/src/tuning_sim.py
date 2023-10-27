@@ -37,8 +37,8 @@ gnss_sim = SensorGNSS(
 
 
 x_est_init_nom_sim = NominalState(
-    pos=np.array([0, 0, 0]),  # position                         (DEFAULT VALUE: np.array([0.2, 0, -5]))
-    vel=np.array([0, 0, 0]),  # velocity                           (DEFAULT VALUE: np.array([20, 0, 0]))
+    pos=np.array([0.2, 0, -5]),  # position                         (DEFAULT VALUE: np.array([0.2, 0, -5]))
+    vel=np.array([20, 0, 0]),  # velocity                           (DEFAULT VALUE: np.array([20, 0, 0]))
     ori=RotationQuaterion.from_euler([0, 0, 0]),  # orientation     (DEFAULT VALUE: RotationQuaterion.from_euler([0, 0, 0]))
     accm_bias=np.zeros(3),  # accelerometer bias                    (DEFAULT VALUE: np.zeros(3))
     gyro_bias=np.zeros(3),  # gyro bias                             (DEFAULT VALUE: np.zeros(3))

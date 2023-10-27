@@ -63,10 +63,6 @@ class ModelIMU:
         Returns:
             z_corr: corrected IMU measurement
         """
-        acc_est = np.zeros(3)
-        avel_est = np.zeros(3)
-
-        # Noise is not accounted for in estimate, but rather in covariance
         acc_est = self.accm_correction @ (z_imu.acc - x_est_nom.accm_bias)
         avel_est = self.gyro_correction @ (z_imu.avel - x_est_nom.gyro_bias)
 
@@ -98,14 +94,14 @@ class ModelIMU:
         v = x_est_nom.vel
         p = x_est_nom.pos
 
-        pos_pred = p + dt*v + (dt**2)/2 * a  # TODO
-        vel_pred = v + dt*a  # TODO
+        pos_pred = p + dt*v + ((dt**2)/2)*a
+        vel_pred = v + dt*a
 
-        delta_rot = RotationQuaterion(1, np.zeros(3)).from_avec(dt*w)  # TODO
-        ori_pred = x_est_nom.ori @ delta_rot  # TODO
+        delta_rot = RotationQuaterion(1, np.zeros(3)).from_avec(dt*w)
+        ori_pred = x_est_nom.ori @ delta_rot
 
-        acc_bias_pred = x_est_nom.accm_bias - dt * self.accm_bias_p * x_est_nom.accm_bias # TODO
-        gyro_bias_pred = x_est_nom.gyro_bias - dt * self.gyro_bias_p * x_est_nom.gyro_bias  # TODO
+        acc_bias_pred = x_est_nom.accm_bias - dt * self.accm_bias_p * x_est_nom.accm_bias
+        gyro_bias_pred = x_est_nom.gyro_bias - dt * self.gyro_bias_p * x_est_nom.gyro_bias
 
         x_nom_pred = NominalState(pos_pred, vel_pred, ori_pred, acc_bias_pred, gyro_bias_pred)
 
@@ -137,13 +133,13 @@ class ModelIMU:
         S_omega = get_cross_matrix(z_corr.avel)
 
         A_c[block_3x3(0, 1)] = np.eye(3)
-        A_c[block_3x3(1, 2)] = - Rq @ S_acc
-        A_c[block_3x3(1, 3)] = - Rq @ self.accm_correction
-        A_c[block_3x3(2, 2)] = - S_omega
-        A_c[block_3x3(2, 4)] = - self.gyro_correction
-        A_c[block_3x3(3, 3)] = - (self.accm_bias_p * self.accm_correction)
-        A_c[block_3x3(4, 4)] = - (self.gyro_bias_p * self.gyro_correction)
-        
+        A_c[block_3x3(1, 2)] = -Rq @ S_acc
+        A_c[block_3x3(1, 3)] = -Rq @ self.accm_correction
+        A_c[block_3x3(2, 2)] = -S_omega
+        A_c[block_3x3(2, 4)] = -self.gyro_correction
+        A_c[block_3x3(3, 3)] = -(self.accm_bias_p * self.accm_correction)
+        A_c[block_3x3(4, 4)] = -(self.gyro_bias_p * self.gyro_correction)
+
         return A_c
 
     def get_error_G_c(self,
@@ -162,8 +158,8 @@ class ModelIMU:
         G_c = np.zeros((15, 12))
         Rq = x_est_nom.ori.as_rotmat()
 
-        G_c[block_3x3(1, 0)] = - Rq
-        G_c[block_3x3(2, 1)] = - np.eye(3)
+        G_c[block_3x3(1, 0)] = -Rq
+        G_c[block_3x3(2, 1)] = -np.eye(3)
         G_c[block_3x3(3, 2)] = np.eye(3)
         G_c[block_3x3(4, 3)] = np.eye(3)
 
@@ -191,20 +187,20 @@ class ModelIMU:
             A_d (ndarray[15, 15]): discrede transition matrix
             GQGT_d (ndarray[15, 15]): discrete noise covariance matrix
         """
-        A_c = self.A_c(x_est_nom, z_corr)  # TODO
-        G_c = self.get_error_G_c(x_est_nom)  # TODO
-        GQGT_c = G_c @ self.Q_c @ G_c.T  # TODO
+        A_c = self.A_c(x_est_nom, z_corr)
+        G_c = self.get_error_G_c(x_est_nom)
+        GQGT_c = G_c @ self.Q_c @ G_c.T
         
         zero_matr = A_c * 0
-        exponent = np.block([[-A_c, GQGT_c], [zero_matr, A_c.T]]) * dt  # TODO
-        VanLoanMatrix = scipy.linalg.expm(exponent)  # TODO
+        exponent = np.block([[-A_c, GQGT_c], [zero_matr, A_c.T]]) * dt
+        VanLoanMatrix = scipy.linalg.expm(exponent)
 
         M = 15 #Dimension of blocks in block matrix
         V1 = VanLoanMatrix[1*M:2*M, 1*M:2*M]
         V2 = VanLoanMatrix[0*M:1*M, 1*M:2*M]
 
-        A_d = scipy.linalg.expm(A_c * dt)  # TODO
-        GQGT_d = V1.T @ V2  # TODO
+        A_d = scipy.linalg.expm(A_c * dt)
+        GQGT_d = V1.T @ V2
 
         return A_d, GQGT_d
 
@@ -227,10 +223,10 @@ class ModelIMU:
         """
         x_est_prev_nom = x_est_prev.nom
         x_est_prev_err = x_est_prev.err
-        Ad, GQGTd = self.get_discrete_error_diff(x_est_prev_nom, z_corr, dt)  # TODO
+        Ad, GQGTd = self.get_discrete_error_diff(x_est_prev_nom, z_corr, dt)
 
         x_err_pred_est = Ad @ x_est_prev_err.mean
-        P_pred = Ad @ x_est_prev_err.cov @ Ad.T + GQGTd # TODO
+        P_pred = Ad @ x_est_prev_err.cov @ Ad.T + GQGTd
 
         x_err_pred = MultiVarGauss(x_err_pred_est, P_pred)
 

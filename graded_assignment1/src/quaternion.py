@@ -44,7 +44,7 @@ class RotationQuaterion(NamedArray):
         eta_b, epsilon_b = other
 
         # Adapted code to follow cross function requirements row vectors,
-        eta_out = eta_a*eta_b - epsilon_a.T @ epsilon_b  # TODO
+        eta_out = eta_a*eta_b - epsilon_a.T @ epsilon_b
         epout = eta_b*epsilon_a + eta_a*epsilon_b + np.cross(epsilon_a.T, epsilon_b.T).T  #NOTE: Cross function needs row vectors
 
         # "RotationQuaterion" expects a row vector
