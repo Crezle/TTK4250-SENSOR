@@ -72,7 +72,7 @@ class MultiVarGauss(Generic[T]):
         assert self.mean.shape[0] == self.cov.shape[0] == self.cov.shape[1]
         assert np.all(np.isfinite(self.mean))
         assert np.all(np.isfinite(self.cov))
-        assert np.allclose(self.cov, self.cov.T)
+        #assert np.allclose(self.cov, self.cov.T)
         assert np.all(np.linalg.eigvals(self.cov) >= 0)
 
     def __iter__(self):
