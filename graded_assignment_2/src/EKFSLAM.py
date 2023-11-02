@@ -141,7 +141,11 @@ class EKFSLAM:
         # cov matrix layout:
         # [[P_xx, P_xm],
         # [P_mx, P_mm]]
-
+        F = np.eye(P.shape[0])
+        F[:3, :3] = Fx
+        
+        
+        
         P[:3, :3] = Fx @ P[:3, :3] @ Fx.T + self.Q# TODO robot cov prediction
         P[:3, 3:] = Fx @ P[:3, 3:]  # TODO robot-map covariance prediction
         P[3:, :3] = P[:3, 3:].T # TODO map-robot covariance: transpose of the above
@@ -170,10 +174,6 @@ class EKFSLAM:
             The landmarks in the sensor frame.
         """
 
-        # TODO replace this with your own code
-        zpred = solution.EKFSLAM.EKFSLAM.h(self, eta)
-        return zpred
-
         # extract states and map
         x = eta[0:3]
         # reshape map (2, #landmarks), m[:, j] is the jth landmark
@@ -183,12 +183,12 @@ class EKFSLAM:
 
         # None as index ads an axis with size 1 at that position.
         # Numpy broadcasts size 1 dimensions to any size when needed
-        delta_m = None  # TODO, relative position of landmark to sensor on robot in world frame
+        delta_m = m[1, None] - x[1:2]  # TODO, relative position of landmark to sensor on robot in world frame
 
         # TODO, predicted measurements in cartesian coordinates, beware sensor offset for VP
-        zpredcart = None
+        zpredcart = Rot @ delta_m
 
-        zpred_r = None  # TODO, ranges
+        zpred_r = np.linalg.norm(delta_m)  # TODO, ranges
         zpred_theta = None  # TODO, bearings
         zpred = None  # TODO, the two arrays above stacked on top of each other vertically like
         # [ranges;
