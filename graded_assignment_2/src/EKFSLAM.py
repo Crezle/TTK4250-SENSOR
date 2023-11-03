@@ -189,7 +189,7 @@ class EKFSLAM:
         zpred_theta = np.arctan2(zpredcart[1, :], zpredcart[0, :])
         zpred = np.vstack((zpred_r, zpred_theta))
 
-        # stack measurements along one dimension, [range1 bearing1 range2 bearing2 ...]
+        # stack measurements along one dimension, [range1 bearing1 range2 bearing2 range3 bearing3...]
         zpred = zpred.T.ravel()
 
         assert (
@@ -264,10 +264,10 @@ class EKFSLAM:
         Tuple[np.ndarray, np.ndarray], shapes=(3 + 2*(#landmarks + #newlandmarks,), (3 + 2*(#landmarks + #newlandmarks,)*2
             eta with new landmarks appended, and its covariance
         """
-        # TODO replace this with your own code
-        etaadded, Padded = solution.EKFSLAM.EKFSLAM.add_landmarks(
-            self, eta, P, z)
-        return etaadded, Padded
+        # # TODO replace this with your own code
+        # etaadded, Padded = solution.EKFSLAM.EKFSLAM.add_landmarks(
+        #     self, eta, P, z)
+        # return etaadded, Padded
 
         n = P.shape[0]
         assert z.ndim == 1, "SLAM.add_landmarks: z must be a 1d array"
@@ -289,15 +289,17 @@ class EKFSLAM:
             ind = 2 * j
             inds = slice(ind, ind + 2)
             zj = z[inds]
+            
+            psi = eta[2]
 
-            rot = None  # TODO, rotmat in Gz
+            rot = rotmat2d(zj[1] + psi)  # TODO, rotmat in Gz
             # TODO, calculate position of new landmark in world frame
             lmnew[inds] = None
 
-            Gx[inds, :2] = None  # TODO
-            Gx[inds, 2] = None  # TODO
+            Gx[inds, :2] = np.eye(2)  # TODO
+            Gx[inds, 2] = zj[0] @ np.array([[-np.sin(zj[1] + psi)], [np.cos(zj[1] + psi)]]) + sensor_offset_world_der  # TODO
 
-            Gz = None  # TODO
+            Gz = rot @ np.diag([1, zj[0]])  # TODO
 
             # TODO, Gz * R * Gz^T, transform measurement covariance from polar to cartesian coordinates
             Rall[inds, inds] = None
