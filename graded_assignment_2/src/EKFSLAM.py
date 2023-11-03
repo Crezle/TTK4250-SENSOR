@@ -294,24 +294,25 @@ class EKFSLAM:
 
             rot = rotmat2d(zj[1] + psi)  # TODO, rotmat in Gz
             # TODO, calculate position of new landmark in world frame
-            lmnew[inds] = None
+            lmnew[inds] = ((rotmat2d(psi) @ zj) + eta[0:2] + sensor_offset_world).flatten()
 
             Gx[inds, :2] = np.eye(2)  # TODO
-            Gx[inds, 2] = zj[0] @ np.array([[-np.sin(zj[1] + psi)], [np.cos(zj[1] + psi)]]) + sensor_offset_world_der  # TODO
+            Gx[inds, 2] = (zj[0] * np.array([[-np.sin(zj[1] + psi)], [np.cos(zj[1] + psi)]]) + sensor_offset_world_der.reshape(2, -1)).flatten()  # TODO
 
             Gz = rot @ np.diag([1, zj[0]])  # TODO
 
             # TODO, Gz * R * Gz^T, transform measurement covariance from polar to cartesian coordinates
-            Rall[inds, inds] = None
+            Rall[inds, inds] = Gz @ self.R @ Gz.T
 
         assert len(lmnew) % 2 == 0, "SLAM.add_landmark: lmnew not even length"
-        etaadded = None  # TODO, append new landmarks to state vector
-        # TODO, block diagonal of P_new, see problem text in 1g) in graded assignment 3
-        Padded = None
-        Padded[n:, :n] = None  # TODO, top right corner of P_new
+        etaadded = np.append(eta, lmnew)  # TODO, append new landmarks to state vector
+        # TODO, block diagonal of P_new, see problem text in 1g) in graded assignment 3 
+        blkdiag_input_arg = [Gz @ self.R @ Gz.T] * int(Gx.shape[0]/Gz.shape[0])
+        LowerRight = Gx @ P[:3, :3] @ Gx.T + block_diag(*blkdiag_input_arg)
+        Padded = block_diag(P, LowerRight)
+        Padded[:n, n:] =  P[:, :3] @ Gx.T# TODO, top right corner of P_new #FIX: IT WAS BOTTOM LEFT
         # TODO, transpose of above. Should yield the same as calcualion, but this enforces symmetry and should be cheaper
-        Padded[:n, n:] = None
-
+        Padded[n:, :n] = (P[:, :3] @ Gx.T).T
         assert (
             etaadded.shape * 2 == Padded.shape
         ), "EKFSLAM.add_landmarks: calculated eta and P has wrong shape"

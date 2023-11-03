@@ -104,7 +104,7 @@ def main():
     doAsso = True
 
     JCBBalphas = np.array(
-        [0.001, 0.0001] # TODO tune
+        [0.001 * (100), 0.0001 * (1000)] # TODO tune
     )  # first is for joint compatibility, second is individual
 
     slam = EKFSLAM(Q, R, do_asso=doAsso, alphas=JCBBalphas)
