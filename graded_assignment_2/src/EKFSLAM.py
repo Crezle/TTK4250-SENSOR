@@ -183,7 +183,7 @@ class EKFSLAM:
         pos_offset = x[0:2] + Rot.T @ self.sensor_offset
         delta_m = np.subtract(m, pos_offset.reshape(2, 1))
 
-        zpredcart = np.dot(Rot, delta_m)
+        zpredcart = np.dot(Rot, delta_m) # BODY FRAME
 
         zpred_r = np.linalg.norm(delta_m, axis=0)
         zpred_theta = np.arctan2(zpredcart[1, :], zpredcart[0, :])
@@ -288,30 +288,24 @@ class EKFSLAM:
         for j in range(numLmk):
             ind = 2 * j
             inds = slice(ind, ind + 2)
-            zj = z[inds]
-            
+            zj = z[inds] # Given in polar coords, need to turn into cartesian
+            zj_c = zj[0] * np.array([np.cos(zj[1]), np.sin(zj[1])])
             psi = eta[2]
 
-            rot = rotmat2d(zj[1] + psi)  # TODO, rotmat in Gz
-            # TODO, calculate position of new landmark in world frame
-            lmnew[inds] = ((rotmat2d(psi) @ zj) + eta[0:2] + sensor_offset_world).flatten()
+            rot = rotmat2d(zj[1] + psi)  # rotmat in Gz
+            lmnew[inds] = rotmat2d(eta[2]) @ zj_c + sensor_offset_world + eta[0:2]
 
-            Gx[inds, :2] = np.eye(2)  # TODO
+            Gx[inds, :2] = np.eye(2)
             Gx[inds, 2] = (zj[0] * np.array([[-np.sin(zj[1] + psi)], [np.cos(zj[1] + psi)]]) + sensor_offset_world_der.reshape(2, -1)).flatten()  # TODO
 
-            Gz = rot @ np.diag([1, zj[0]])  # TODO
+            Gz = rot @ np.diag([1, zj[0]])
 
-            # TODO, Gz * R * Gz^T, transform measurement covariance from polar to cartesian coordinates
             Rall[inds, inds] = Gz @ self.R @ Gz.T
 
         assert len(lmnew) % 2 == 0, "SLAM.add_landmark: lmnew not even length"
-        etaadded = np.append(eta, lmnew)  # TODO, append new landmarks to state vector
-        # TODO, block diagonal of P_new, see problem text in 1g) in graded assignment 3 
-        blkdiag_input_arg = [Gz @ self.R @ Gz.T] * int(Gx.shape[0]/Gz.shape[0])
-        LowerRight = Gx @ P[:3, :3] @ Gx.T + block_diag(*blkdiag_input_arg)
-        Padded = block_diag(P, LowerRight)
+        etaadded = np.append(eta, lmnew)
+        Padded = block_diag(P, Gx @ P[:3, :3] @ Gx.T + Rall)
         Padded[:n, n:] =  P[:, :3] @ Gx.T# TODO, top right corner of P_new #FIX: IT WAS BOTTOM LEFT
-        # TODO, transpose of above. Should yield the same as calcualion, but this enforces symmetry and should be cheaper
         Padded[n:, :n] = (P[:, :3] @ Gx.T).T
         assert (
             etaadded.shape * 2 == Padded.shape
