@@ -98,7 +98,7 @@ def main():
     M = len(landmarks)
 
     # %% Initilize
-    Q = np.diag([0.1 * (1), 0.1 * (1), 1 * np.pi / 180 * (1)]) ** 2 # TODO tune ###   CURRENT OPTIMAL GAINS (0.2, 0.2, 0.5)
+    Q = np.diag([0.1 * (0.9), 0.1 * (0.9), 1 * np.pi / 180 * (0.9)]) ** 2 # TODO tune ###   CURRENT OPTIMAL GAINS (0.2, 0.2, 0.5)
     R = np.diag([0.1 * (1), 1 * np.pi / 180 * (1)]) ** 2 # TODO tune                ###   CURRENT OPTIMAL GAINS (0.8, 1)
 
     doAsso = True

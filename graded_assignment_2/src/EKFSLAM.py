@@ -33,6 +33,8 @@ class EKFSLAM:
         np.ndarray, shape = (3,)
             the predicted state
         """
+        xpred = solution.EKFSLAM.EKFSLAM.f(self, x, u)
+        return xpred
         
         x_prev = x[0]
         y_prev = x[1]
@@ -63,6 +65,9 @@ class EKFSLAM:
         np.ndarray
             The Jacobian of f wrt. x.
         """
+        Fx = solution.EKFSLAM.EKFSLAM.Fx(self, x, u)
+        return Fx
+
         psi = utils.wrapToPi(x[2]) 
         v = u[1]
         u = u[0]
@@ -88,6 +93,8 @@ class EKFSLAM:
         np.ndarray
             The Jacobian of f wrt. u.
         """
+        Fu = solution.EKFSLAM.EKFSLAM.Fu(self, x, u)
+        return Fu
         psi = utils.wrapToPi(x[2])
 
         rot_block = np.array([[np.cos(psi), -np.sin(psi)],
@@ -116,8 +123,8 @@ class EKFSLAM:
         Tuple[np.ndarray, np.ndarray], shapes= (3 + 2*#landmarks,), (3 + 2*#landmarks,)*2
             predicted mean and covariance of eta.
         """
-        # etapred, P = solution.EKFSLAM.EKFSLAM.predict(self, eta, P, z_odo)
-        # return etapred, P
+        etapred, P = solution.EKFSLAM.EKFSLAM.predict(self, eta, P, z_odo)
+        return etapred, P
 
         # check inout matrix
         assert np.allclose(P, P.T), "EKFSLAM.predict: not symmetric P input"
@@ -173,6 +180,8 @@ class EKFSLAM:
         np.ndarray, shape=(2 * #landmarks,)
             The landmarks in the sensor frame.
         """
+        zpred = solution.EKFSLAM.EKFSLAM.h(self, eta)
+        return zpred
 
         x = eta[0:3]
 
@@ -211,6 +220,8 @@ class EKFSLAM:
         np.ndarray, shape=(2 * #landmarks, 3 + 2 * #landmarks)
             the jacobian of h wrt. eta.
         """
+        H = solution.EKFSLAM.EKFSLAM.h_jac(self, eta)
+        return H
 
         x = eta[0:3]
 
@@ -264,10 +275,9 @@ class EKFSLAM:
         Tuple[np.ndarray, np.ndarray], shapes=(3 + 2*(#landmarks + #newlandmarks,), (3 + 2*(#landmarks + #newlandmarks,)*2
             eta with new landmarks appended, and its covariance
         """
-        # # TODO replace this with your own code
-        # etaadded, Padded = solution.EKFSLAM.EKFSLAM.add_landmarks(
-        #     self, eta, P, z)
-        # return etaadded, Padded
+        etaadded, Padded = solution.EKFSLAM.EKFSLAM.add_landmarks(
+            self, eta, P, z)
+        return etaadded, Padded
 
         n = P.shape[0]
         assert z.ndim == 1, "SLAM.add_landmarks: z must be a 1d array"
