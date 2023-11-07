@@ -424,8 +424,10 @@ class EKFSLAM:
                 v[1::2] = utils.wrapToPi(v[1::2])
 
                 # Kalman mean update
-                # S_cho_factors = la.cho_factor(Sa) # Optional, used in places for S^-1, see scipy.linalg.cho_factor and scipy.linalg.cho_solve
-                W = P @ np.linalg.solve(Sa, Ha).T  # TODO, Kalman gain, can use S_cho_factors
+                S_cho_factors = la.cho_factor(Sa) # Optional, used in places for S^-1, see scipy.linalg.cho_factor and scipy.linalg.cho_solve
+                W = P @ la.cho_solve(S_cho_factors, Ha).T
+
+                #W = P @ np.linalg.solve(Sa, Ha).T  # TODO, Kalman gain, can use S_cho_factors
                 etaupd = eta + W @ v  # TODO, Kalman update
 
                 # Kalman cov update: use Joseph form for stability
@@ -435,7 +437,8 @@ class EKFSLAM:
                 Pupd = (np.eye(W.shape[0]) - W @ Ha) @ P  # TODO, Kalman update. This is the main workload on VP after speedups
 
                 # calculate NIS, can use S_cho_factors
-                NIS = v.T @ np.linalg.solve(Sa, v)  # TODO
+                #NIS = v.T @ np.linalg.solve(Sa, v)  # TODO
+                NIS = v.T @ la.cho_solve(S_cho_factors, v)
 
         else:  # All measurements are new landmarks,
             a = np.full(z.shape[0], -1)
