@@ -1,6 +1,6 @@
 if __name__ == '__main__':
     
-    WHAT = 'sim' # TODO: 'sim' or 'real'
+    WHAT = 'real' # TODO: 'sim' or 'real'
     
     if WHAT == 'real':
         from run_real_SLAM import main

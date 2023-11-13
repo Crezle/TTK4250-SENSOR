@@ -238,10 +238,12 @@ def main():
         (NISnorm[:mk] <= CInorm[:mk, 1])
 
     fig3, ax3 = plt.subplots(num=3, clear=True)
-    ax3.plot(CInorm[:mk, 0], "--")
-    ax3.plot(CInorm[:mk, 1], "--")
-    ax3.plot(NISnorm[:mk], lw=0.5)
-
+    ax3.plot(CInorm[:mk, 0], "--", label="CI Lower")
+    ax3.plot(CInorm[:mk, 1], "--", label="CI Upper")
+    ax3.plot(NISnorm[:mk], lw=0.5, label="NIS")
+    ax3.axhline(y=NISnorm[:mk].mean(), linestyle="dotted", label=f"NIS Mean: {np.round(NISnorm[:mk].mean(), 3)}",
+               color='r', xmin=0, xmax=len(NISnorm[:mk]))
+    ax3.legend(fontsize=8, loc="upper right")
     ax3.set_title(f"NIS, {insideCI.mean()*100:.2f}% inside CI")
 
     # %% slam

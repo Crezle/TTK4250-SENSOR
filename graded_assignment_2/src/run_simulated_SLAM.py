@@ -235,6 +235,8 @@ def main():
     ax3.plot(CInorm[:N, 0], "--", label="CI Lower")
     ax3.plot(CInorm[:N, 1], "--", label="CI Upper")
     ax3.plot(NISnorm[:N], lw=0.5, label="NIS")
+    ax3.axhline(y=NISnorm[:N].mean(), linestyle='dotted', label=f"NIS Mean: {np.round(NISnorm[:N].mean(), 3)}",
+                color='r', xmin=0, xmax=len(NISnorm[:N]))
     ax3.legend(fontsize="8", loc="upper right")
     ax3.set_title(f"NIS, {np.round(insideCI.mean()*100, 3)}% inside CI")
 
@@ -250,8 +252,8 @@ def main():
         CI_NEES = chi2.interval(confidence_prob, df)
         ax.plot(np.full(N, CI_NEES[0]), "--", label=f"CI Lower: {np.round(CI_NEES[0], 3)}")
         ax.plot(np.full(N, CI_NEES[1]), "--", label=f"CI Upper: {np.round(CI_NEES[1], 3)}")
-        ax.plot(np.full(N, NEES.mean()), linestyle="dotted", label=f"NEES Mean: {np.round(NEES.mean(), 3)}")  # Added
-        ax.plot(NEES[:N], lw=0.5, label="NEES")
+        ax.plot(np.full(N, NEES.mean()), linestyle="dotted", label=f"NEES Mean: {np.round(NEES.mean(), 3)}", color='r')  # Added
+        ax.plot(NEES[:N], lw=0.5, label="NEES", color='g')
         ax.legend(fontsize="8", loc="upper right")                             # Added
         insideCI = (CI_NEES[0] <= NEES) * (NEES <= CI_NEES[1])
         ax.set_title(f"NEES {tag}: {np.round(insideCI.mean()*100, 3)}% inside CI")
