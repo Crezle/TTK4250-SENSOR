@@ -104,7 +104,7 @@ def main():
     doAsso = True
 
     JCBBalphas = np.array(
-        [0.001 * (100), 0.0001 * (1000)] # TODO tune
+        [0.001 * (1), 0.0001 * (1)] # TODO tune
     )  # first is for joint compatibility, second is individual
 
     slam = EKFSLAM(Q, R, do_asso=doAsso, alphas=JCBBalphas)
@@ -133,7 +133,7 @@ def main():
     # plotting
 
     doAssoPlot = False
-    playMovie = True
+    playMovie = False
     if doAssoPlot:
         figAsso, axAsso = plt.subplots(num=1, clear=True)
 
@@ -232,11 +232,11 @@ def main():
     insideCI = (CInorm[:N, 0] <= NISnorm[:N]) * (NISnorm[:N] <= CInorm[:N, 1])
 
     fig3, ax3 = plt.subplots(num=3, clear=True)
-    ax3.plot(CInorm[:N, 0], "--")
-    ax3.plot(CInorm[:N, 1], "--")
-    ax3.plot(NISnorm[:N], lw=0.5)
-
-    ax3.set_title(f"NIS, {insideCI.mean()*100}% inside CI")
+    ax3.plot(CInorm[:N, 0], "--", label="CI Lower")
+    ax3.plot(CInorm[:N, 1], "--", label="CI Upper")
+    ax3.plot(NISnorm[:N], lw=0.5, label="NIS")
+    ax3.legend(fontsize="8", loc="upper right")
+    ax3.set_title(f"NIS, {np.round(insideCI.mean()*100, 3)}% inside CI")
 
     # NEES
 
@@ -248,11 +248,13 @@ def main():
 
     for ax, tag, NEES, df in zip(ax4, tags, NEESes.T, dfs):
         CI_NEES = chi2.interval(confidence_prob, df)
-        ax.plot(np.full(N, CI_NEES[0]), "--")
-        ax.plot(np.full(N, CI_NEES[1]), "--")
-        ax.plot(NEES[:N], lw=0.5)
+        ax.plot(np.full(N, CI_NEES[0]), "--", label=f"CI Lower: {np.round(CI_NEES[0], 3)}")
+        ax.plot(np.full(N, CI_NEES[1]), "--", label=f"CI Upper: {np.round(CI_NEES[1], 3)}")
+        ax.plot(np.full(N, NEES.mean()), linestyle="dotted", label=f"NEES Mean: {np.round(NEES.mean(), 3)}")  # Added
+        ax.plot(NEES[:N], lw=0.5, label="NEES")
+        ax.legend(fontsize="8", loc="upper right")                             # Added
         insideCI = (CI_NEES[0] <= NEES) * (NEES <= CI_NEES[1])
-        ax.set_title(f"NEES {tag}: {insideCI.mean()*100}% inside CI")
+        ax.set_title(f"NEES {tag}: {np.round(insideCI.mean()*100, 3)}% inside CI")
 
         CI_ANEES = np.array(chi2.interval(confidence_prob, df * N)) / N
         print(f"CI ANEES {tag}: {CI_ANEES}")
@@ -277,7 +279,7 @@ def main():
     for ax, err, tag, ylabel, scaling in zip(ax5, errs, tags[1:], ylabels, scalings):
         ax.plot(err * scaling)
         ax.set_title(
-            f"{tag}: RMSE {np.sqrt((err**2).mean())*scaling} {ylabel}")
+            f"{tag}: RMSE {np.round(np.sqrt((err**2).mean())*scaling, 3)} {ylabel}")
         ax.set_ylabel(f"[{ylabel}]")
         ax.grid()
 
